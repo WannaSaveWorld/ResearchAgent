@@ -1,0 +1,8 @@
+ResearchAgent
+Copyright 2026 Fankai Zhang
+
+This independent project integrates PaperQA as an installed dependency.
+PaperQA: https://github.com/Future-House/paper-qa
+PaperQA is developed by FutureHouse and its contributors under Apache-2.0.
+Upstream source is not vendored or represented as original ResearchAgent code.
+Other dependencies retain their respective copyright notices and licenses.
