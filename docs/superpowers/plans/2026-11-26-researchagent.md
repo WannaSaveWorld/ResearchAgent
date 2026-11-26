@@ -42,4 +42,4 @@ Interfaces: ResearchWorkflow.ask(question,session_id,external)->Answer；create_
 Files: README.md、.env.example、Dockerfile、scripts/demo.py、scripts/evaluate.py、docs/architecture.md、LICENSE、NOTICE。
 - [x] 提供自制演示文献与有标注检索题集，运行 BM25/向量/混合 Recall@k 和MRR评测。
 - [x] 运行完整测试、lint及依赖检查，审查配置与数据排除，记录真实验证结果。
-- [ ] 独立复核后修复重要问题；提交并上传用户授权的私有仓库，核实远端文件和提交。
+- [x] 独立复核后修复重要问题；提交并上传用户授权的私有仓库，核实远端文件和提交。
