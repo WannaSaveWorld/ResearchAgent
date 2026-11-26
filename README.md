@@ -1,22 +1,26 @@
-# ResearchAgent · 科研文献助手
+# ResearchAgent · Scientific Literature Assistant
 
-以 [PaperQA](https://github.com/Future-House/paper-qa) 为文献证据问答基础的独立项目，增加 PDF 页码溯源、BM25 + FAISS + RRF 混合检索、LangGraph 工作流、FastAPI 服务和显式授权的 MCP 外部论文搜索。
+**English** | [简体中文](README.zh-CN.md)
 
-适用于组会准备、课题调研和论文结论核查。回答附带证据原文及来源，仍需人工确认引用是否真正支持结论。
+An independent literature assistant built on [PaperQA](https://github.com/Future-House/paper-qa), extended with PDF page provenance, BM25 + FAISS + RRF hybrid retrieval, LangGraph orchestration, FastAPI, and opt-in external paper search through MCP.
 
-## 功能
+Designed for literature reviews, research discussions, and checking claims against source documents. Answers include evidence passages and sources; users should still verify that the evidence supports each claim.
 
-- **文献入库**：内容哈希去重、逐页提取文本、识别常见章节标题、分块、保留 PDF 文件页序与页标签。
-- **混合检索**：BM25 词法检索与真实 embedding 的 FAISS 余弦相似度召回，通过 RRF 融合排名。
-- **PaperQA 问答**：混合检索决定候选，PaperQA 进行证据摘要及引用回答，关闭上游重复召回。
-- **来源校验**：引用只能映射到实际候选，页码由解析器确定；未知引用或无有效引用时拒答。
-- **Agent 工作流**：LangGraph 管理本地检索、可选外部搜索、回答和引用检查，有步数及超时限制。
-- **可运行服务**：中文上传/问答页面、Swagger API、SQLite 文献与会话持久化。
-- **评测与测试**：合成演示文献、标注检索题集、Recall@k/MRR@k 评测及无需真实密钥的协议测试。
+## Features
 
-## 快速开始
+- **Document ingestion:** content-hash deduplication, page-level text extraction, common section-heading recognition, chunking, and PDF page indices and labels.
+- **Hybrid retrieval:** BM25 lexical retrieval and FAISS cosine-similarity search over real embeddings, combined with reciprocal rank fusion (RRF).
+- **PaperQA integration:** hybrid retrieval selects candidates; PaperQA summarizes evidence and generates cited answers, with its additional retrieval disabled.
+- **Source validation:** citations must map to actual candidates. Pages come from parser metadata; unknown citations or answers without valid citations are rejected.
+- **Agent workflow:** LangGraph coordinates local retrieval, optional external search, answer generation, and citation checks, with step and timeout limits.
+- **Local service:** a Chinese-language upload and question-answering interface, interactive API documentation, and SQLite persistence for documents and sessions.
+- **Evaluation:** synthetic documents, labelled questions, Recall@k/MRR@k evaluation, and protocol tests without real credentials.
 
-推荐 Python 3.12；支持 Python 3.11-3.13。以下在仓库根目录运行。
+## Quick Start
+
+Python 3.12 is recommended; supported versions are Python 3.11–3.13. Run commands from the repository root.
+
+### Windows / PowerShell
 
 ```powershell
 python -m venv .venv
@@ -25,25 +29,32 @@ python -m pip install -e ".[dev]"
 Copy-Item .env.example .env
 ```
 
-Linux/macOS：使用 `source .venv/bin/activate` 和 `cp .env.example .env`。
+### Linux / macOS
 
-Windows 若遇到依赖的长路径错误，优先把仓库放到较短路径（例如 `D:\ResearchAgent`），再安装。项目无需修改注册表。不要提交 `.venv`。
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+cp .env.example .env
+```
 
-编辑 `.env` 中的聊天与 embedding 服务配置，然后启动：
+On Windows, if installation fails because of long dependency paths, use a shorter checkout path such as `D:\ResearchAgent` and retry. No registry changes are required. Keep `.venv` out of Git.
 
-```powershell
+Configure the chat and embedding services in `.env`, then start:
+
+```bash
 python -m uvicorn researchagent.api:app_factory --factory --host 127.0.0.1 --port 8000
 ```
 
-- 页面：<http://127.0.0.1:8000>
-- API：<http://127.0.0.1:8000/docs>
-- 健康检查：<http://127.0.0.1:8000/health>
+- Web interface: <http://127.0.0.1:8000>
+- API documentation: <http://127.0.0.1:8000/docs>
+- Health check: <http://127.0.0.1:8000/health>
 
-默认仅供本机单用户使用，不含公开服务所需的认证、租户隔离及生产运维设施。
+The default setup is for local, single-user use. Authentication, tenant isolation, and production operations are not included.
 
-## 配置模型
+## Model Configuration
 
-默认使用兼容聊天及 embeddings API 的服务；API key 由使用者自行提供。`RA_CHAT_MODEL` 采用 LiteLLM 模型名，例如 `openai/gpt-4o-mini`。可替换成兼容供应商支持的模型和端点，不要将密钥放入 README、代码或 Git。
+Supply your own credentials for compatible chat and embeddings APIs. `RA_CHAT_MODEL` uses a LiteLLM identifier. Replace models and endpoints with those supported by your provider. Never commit real keys.
 
 ```dotenv
 RA_CHAT_MODEL=openai/gpt-4o-mini
@@ -55,84 +66,84 @@ RA_EMBEDDING_BASE_URL=https://api.openai.com/v1
 RA_EMBEDDING_API_KEY=your-key
 ```
 
-这些是配置示例，不代表附送额度，也不保证任意供应商的兼容行为。将 PDF 片段发送至远程 embedding/聊天服务前，应确认这些文献允许发送。
+These are examples, not included API credits or a guarantee of compatibility with every provider. Confirm that your documents may be sent to the chosen remote services before sending passages for embedding or answer generation.
 
-也可安装 `python -m pip install -e ".[local]"`，选择 `RA_EMBEDDING_BACKEND=local` 并将 `RA_EMBEDDING_MODEL` 设置为实际本地 sentence-transformers 模型名或路径。首次下载模型需要网络和磁盘空间；聊天仍由单独的配置决定。项目不会用随机向量或哈希向量代替生产语义检索。
+For local embeddings, install `python -m pip install -e ".[local]"`, set `RA_EMBEDDING_BACKEND=local`, and set `RA_EMBEDDING_MODEL` to a sentence-transformers model name or local path. Initial downloads need network access and disk space. Chat inference is configured separately. Production semantic retrieval never substitutes random or hash-based vectors for actual embeddings.
 
-**没有密钥也可以**：上传文献、查看来源、调用 `/search?mode=bm25&q=...`、运行离线测试和 BM25 演示评测。聊天和语义检索缺少配置时返回明确错误，不生成假回答。
+**Without API keys**, you can still upload documents, inspect sources, use `/search?mode=bm25&q=...`, run offline tests, and evaluate the BM25 demo. Chat and semantic retrieval return explicit configuration errors when required settings are missing.
 
-## 外部论文搜索（可选）
+## External Paper Search (Optional)
 
-示例提供一个真正调用 arXiv 元数据 API 的 MCP 服务：
+Start the example MCP server, which queries the arXiv metadata API:
 
-```powershell
+```bash
 python examples/mcp_paper_search.py
 ```
 
-在 `.env` 配置：
+Configure `.env`, restart ResearchAgent, and enable external paper search in the interface:
 
 ```dotenv
 RA_MCP_URL=http://127.0.0.1:8001/mcp
 RA_MCP_TOOL=search_papers
 ```
 
-重启 ResearchAgent，在页面勾选“允许外部论文检索”。**仅本地未召回候选且用户显式开启时调用**，每次请求最多一次；关闭时不联系该服务。首版不根据模型判断任意执行工具。
+**The tool runs only when local retrieval returns no candidates and the user explicitly opts in**, at most once per request. When disabled, the external service is not contacted. The initial implementation does not let the model execute arbitrary tools.
 
-工具契约：接收 `{"query":"..."}`，返回 `{"results":[{"title":"...","url":"https://...","text":"摘要或证据"}]}`。外部证据标记 URL，不伪造 PDF 页码。示例检索摘要而非下载全文，受 arXiv 可用性和使用限制影响。
+Tool input: `{"query":"..."}`. Output: `{"results":[{"title":"...","url":"https://...","text":"abstract or evidence"}]}`. External evidence uses source URLs, not invented PDF pages. The example searches abstracts rather than downloading full papers and is subject to arXiv availability and usage requirements.
 
-## 演示与评测
+## Demo and Evaluation
 
-```powershell
+```bash
 python scripts/demo.py
 python scripts/evaluate.py --modes bm25 --k 3
-# 配置真实 embedding 后比较同一题集上的三种方法：
+# After configuring real embeddings, compare all three modes:
 python scripts/evaluate.py --modes bm25 vector hybrid --k 3
 ```
 
-演示为**自制5份、10页合成文本和10个问题**，不是公开论文，也不是实验室真实效果评测。输出在 `data/evaluation.json`。报告是文档级 Recall@k 和 MRR@k；候选先按文档去重，不是片段级指标。可通过 `--questions` 指定真实标注 JSON：
+The demo contains **five original synthetic documents, ten pages, and ten questions**. These are not published papers or a real-world laboratory benchmark. Results are saved to `data/evaluation.json`. Recall@k and MRR@k are document-level metrics after deduplicating documents, not chunk-level metrics. Supply a labelled JSON file with `--questions`:
 
 ```json
-[{"question":"研究问题","relevant_files":["paper.pdf"]}]
+[{"question":"Research question","relevant_files":["paper.pdf"]}]
 ```
 
-评测文件名应唯一；实际评测应增加问题数量、同义表达、困难负样本和无答案问题。不要把合成数据高分写成真实检索提升。
+Use unique filenames in evaluation labels. A meaningful benchmark should include more questions, paraphrases, hard negatives, and unanswerable queries. High synthetic-demo scores do not establish real-world retrieval improvements.
 
-## API 一览
+## API Reference
 
-| 方法 | 路径 | 作用 |
+| Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/health` | 运行和配置状态，不返回密钥 |
-| POST / GET | `/documents` | 上传 / 列出 PDF |
-| GET | `/documents/{id}/source?page=1` | 返回原 PDF，查看器可追加 `#page=1` |
-| GET | `/search?q=...&mode=hybrid&k=6` | 返回候选及检索分数 |
-| POST | `/sessions` | 创建会话 |
-| GET | `/sessions/{id}` | 已保存消息 |
-| POST | `/ask` | 问题、可选 session_id 与 external |
+| GET | `/health` | Service and configuration status; never returns keys |
+| POST / GET | `/documents` | Upload / list PDFs |
+| GET | `/documents/{id}/source?page=1` | Return the original PDF; viewers can append `#page=1` |
+| GET | `/search?q=...&mode=hybrid&k=6` | Retrieve candidates and scores |
+| POST | `/sessions` | Create a session |
+| GET | `/sessions/{id}` | Read saved messages |
+| POST | `/ask` | Submit a question, optional `session_id`, and `external` flag |
 
-会话保留历史消息，并使用最近三个用户问题作为有限主题上下文；不是完整对话重写系统。历史回答不作为本次问题的文献证据。一次成功请求后保存用户问题及结构化回答。
+Sessions persist messages and use the latest three user questions as limited topic context. This is not a full conversational query-rewriting system. Previous answers are not reused as documentary evidence. Successful requests save the user question and structured answer.
 
-## 测试
+## Testing
 
-```powershell
+```bash
 python -m pytest -q
 python -m ruff check src tests scripts examples
 python -m pip check
 ```
 
-测试包含真实 FAISS、真实 PaperQA 证据/回答流程、LangGraph、API 和本机 HTTP 协议。测试中的 LLM 与部分 embedding 是**明确标注的替身**，没有宣称真实供应商质量或模型准确率。真实密钥、线上模型和 arXiv 服务的验证必须另行执行。
+Tests exercise real FAISS, the PaperQA evidence and answer pipeline, LangGraph, the API, and local HTTP protocols. LLMs and some embeddings are **explicit test doubles**; these tests do not measure provider quality or model accuracy. Real credentials, hosted models, and live arXiv access require separate validation.
 
-参考开发环境锁定见 `requirements-lock.txt`（Python 3.12 / Windows）。跨平台优先按 `pyproject.toml` 安装；完整锁文件中平台依赖带有标记。
+`requirements-lock.txt` records the reference environment (Python 3.12 / Windows). For other platforms, prefer installation through `pyproject.toml`; the reference lock includes platform markers where applicable.
 
-## 数据与索引
+## Data and Indexes
 
-默认 `data/` 下包含 SQLite、原始 PDF、FAISS 索引及清单，均被 Git 忽略。不要直接加载来历不明的索引文件。文件名仅用于显示，原文件按 SHA-256 ID 存储。
+By default, `data/` contains SQLite storage, original PDFs, the FAISS index, and its manifest. These are excluded from Git. Do not load untrusted indexes. Filenames are display metadata; PDFs are stored under SHA-256 identifiers.
 
-索引清单记录模型标识、语料摘要、向量维度和索引摘要。新增文献会触发重建；更换 embedding 模型需使用新数据目录或在停止服务后备份并重建索引目录。首版针对小规模文献库，未实现增量向量更新和分布式索引。
+The manifest records the embedding model, corpus fingerprint, vector dimension, and index checksum. Adding documents triggers a rebuild. When changing the embedding model, use a new data directory or stop the service, back up the index directory, and rebuild it. The initial implementation targets small collections and does not provide incremental vector updates or distributed indexing.
 
-## 复用与新增边界
+## Upstream and Project Contributions
 
-**PaperQA 提供**：文献/片段模型、证据摘要、带引用回答及其格式化能力。
+**PaperQA provides:** document and chunk models, evidence summarization, cited answer generation, and formatting.
 
-**本项目增加**：逐页解析与来源元数据、SQLite 管理、BM25/FAISS/RRF、候选注入适配、引用校验、LangGraph、有界 MCP 工具调用、FastAPI 页面与接口、评测和测试。
+**This project adds:** page-level parsing and provenance, SQLite storage, BM25/FAISS/RRF retrieval, candidate-injection adaptation, citation validation, LangGraph orchestration, bounded MCP calls, a FastAPI interface, evaluation, and tests.
 
-采用独立依赖集成，未将 PaperQA 上游整体复制并改名。保留来源说明和 Apache-2.0 许可证；第三方组件继续遵循各自许可证。架构与局限见 [docs/architecture.md](docs/architecture.md)，验证记录见 [docs/validation.md](docs/validation.md)。
+PaperQA is integrated as a dependency; its full repository has not been copied and renamed. Attribution and the Apache-2.0 license are retained. Third-party components remain subject to their own licenses. See [architecture and limitations](docs/architecture.md) and [validation notes](docs/validation.md), currently available in Chinese.
